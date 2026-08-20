@@ -1,0 +1,2 @@
+<script setup lang="ts">import { onMounted } from 'vue'; import { useProjectStore } from '../stores/project'; const store=useProjectStore(); onMounted(()=>store.refresh())</script>
+<template><section><h1>项目库</h1><input v-model="store.q" @keyup.enter="store.refresh" placeholder="搜索客户或系列"/><p v-if="store.loading">加载中…</p><ul><li v-for="p in store.items" :key="p.id"><strong>{{p.name}}</strong><span>{{p.customer}} · {{p.series}}</span><button @click="store.favorite(p.id)">收藏</button></li></ul></section></template>

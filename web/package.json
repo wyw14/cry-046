@@ -1,0 +1,1 @@
+{"name":"palette-console","private":true,"scripts":{"build":"vite build","test":"vitest run"},"dependencies":{"@vitejs/plugin-vue":"latest","pinia":"latest","vite":"latest","vue":"latest","typescript":"latest","vitest":"latest"},"devDependencies":{}}

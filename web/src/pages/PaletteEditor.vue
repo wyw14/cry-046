@@ -1,0 +1,2 @@
+<script setup lang="ts">import { reactive } from 'vue'; const palette=reactive({name:'',branch:'main',entries:[{name:'主色',hex:'#000000',source:''}]})</script>
+<template><section><h1>配色方案编辑</h1><input v-model="palette.name" placeholder="方案名称"/><input v-model="palette.branch" placeholder="版本分支"/><div v-for="entry in palette.entries" :key="entry.name"><input v-model="entry.name"/><input v-model="entry.hex"/><input v-model="entry.source"/></div><button>保存草稿</button></section></template>
