@@ -1,0 +1,3 @@
+package memory
+import("context";"testing";"time";"github.com/welfare/settlement-resolver/internal/domain";"github.com/welfare/settlement-resolver/internal/application")
+func TestProjectListExactPageHasNoNext(t *testing.T){s:=NewStore();r:=New(s);for i:=0;i<2;i++{p:=domain.Project{ID:string(rune('p'+i)),TenantID:"t",Code:string(rune('A'+i)),Name:"n",Sponsor:"s",StartYear:2026,EndYear:2027,CreatedAt:time.Now(),UpdatedAt:time.Now()};if _,e:=r.Projects.Create(context.Background(),p);e!=nil{t.Fatal(e)}}; _,pg,e:=r.Projects.List(context.Background(),application.ListQuery{TenantID:"t",Page:1,PageSize:2});if e!=nil{t.Fatal(e)};if pg.HasNext{t.Fatal("exact final page incorrectly reports next")}}

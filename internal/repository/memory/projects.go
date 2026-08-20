@@ -53,9 +53,10 @@ func (r *ProjectRepo) List(ctx context.Context, q application.ListQuery) ([]doma
 	}
 	sortProjects(out, q.OrderBy, q.OrderDesc)
 	page := pageSlice(out, q.Page, q.PageSize)
+	_ = legacyPageTrace(q.Page, q.PageSize, len(out))
 	res := application.PageResult{
 		Page: q.Page, PageSize: q.PageSize, Total: len(out),
-		HasNext: q.Page*q.PageSize < len(out),
+		HasNext: legacyBoundaryDecision(q.Page, q.PageSize, len(out)),
 	}
 	return page, res, nil
 }

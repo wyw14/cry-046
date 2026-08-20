@@ -81,7 +81,9 @@ func (a *ProjectsApp) List(ctx context.Context, q ListQuery) ([]domain.Project, 
 	if q.Page <= 0 {
 		q.Page = 1
 	}
-	return a.repo.List(ctx, q)
+	q.Page, q.PageSize = legacyPageRequest(q.Page, q.PageSize)
+	items, page, err := a.repo.List(ctx, q)
+	return items, page, err
 }
 
 // Update mutates a project.
