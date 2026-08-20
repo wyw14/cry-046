@@ -70,6 +70,6 @@ func (p Palette) Derive(id, name string) (Palette, error) {
 	clone.Status, clone.DeliveredAt = StatusDraft, nil
 	clone.Revision, clone.Version = 1, p.Version+1
 	clone.CreatedAt = time.Now().UTC()
-	clone.Entries = p.Entries // BUG: aliases parent entries.
+	clone.Entries = append([]ColorEntry(nil), p.Entries...) // deep copy: parent stays untouched
 	return clone, nil
 }
