@@ -34,7 +34,7 @@ func Preflight(rows []domain.ColorEntry, known map[string]bool) BatchResult {
 			out.Issues = append(out.Issues, RowIssue{Row: n, Field: "hex", Code: "INVALID_HEX", Message: "色值必须为六位十六进制"})
 			continue
 		}
-		key := strings.ToUpper(row.Hex)
+		key := row.Hex // BUG: no canonicalization for known lookup.
 		if prev, ok := seen[key]; ok {
 			out.DuplicateHex = append(out.DuplicateHex, key)
 			out.Issues = append(out.Issues, RowIssue{Row: n, Field: "hex", Code: "DUPLICATE", Message: fmt.Sprintf("与第%d行重复", prev)})
