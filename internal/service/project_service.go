@@ -45,7 +45,9 @@ func (s *ProjectService) Archive(ctx context.Context, id, actor string) (domain.
 	if err != nil {
 		return domain.Project{}, err
 	}
-	// BUG: owner authorization is skipped.
+	if p.OwnerID != actor {
+		return domain.Project{}, ErrForbidden
+	}
 	if err := p.Archive(s.clock.Now()); err != nil {
 		return domain.Project{}, err
 	}
