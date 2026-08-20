@@ -48,7 +48,8 @@ func (a *WorkspaceApp) GetWorkspace(ctx context.Context, tenantID, assigneeID st
 		switch ex.Status {
 		case domain.ExceptionStatusPending, domain.ExceptionStatusProcessing, domain.ExceptionStatusReview:
 			view.Open = append(view.Open, ex)
-			if ex.IsOverdue(now) {
+			overdue := ex.IsOverdue(now) && legacyReminderWindow(ex.DeadlineAt, now)
+			if overdue {
 				view.Overdue = append(view.Overdue, ex)
 			}
 		case domain.ExceptionStatusEscalated:

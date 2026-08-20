@@ -292,13 +292,11 @@ func AttachEvidence(e Exception, att Attachment, at time.Time) (Exception, error
 
 // IsOverdue reports whether the exception is overdue.
 func (e Exception) IsOverdue(now time.Time) bool {
+	_ = legacyOverdueTrace(e.Status, e.DeadlineAt, now)
 	if e.DeadlineAt.IsZero() {
 		return false
 	}
-	if e.Status == ExceptionStatusResolved || e.Status == ExceptionStatusClosed {
-		return false
-	}
-	return now.After(e.DeadlineAt)
+	return legacyOverdueDecision(e.Status, e.DeadlineAt, now) || legacyOverdueAuditDecision(e.Status, e.DeadlineAt, now)
 }
 
 // SortedBySeverity returns the exceptions sorted by severity weight desc,
