@@ -1,0 +1,3 @@
+package service
+import("context";"testing";"github.com/wyw14/cry-046/internal/application";"github.com/wyw14/cry-046/internal/platform/clock";"github.com/wyw14/cry-046/internal/platform/ids";"github.com/wyw14/cry-046/internal/repository/memory")
+func TestArchivedProjectRejectsUnauthorizedMutation(t *testing.T){s:=memory.NewStore(); ps:=NewProjectService(s,s,clock.System{},&ids.Sequence{}); if _,e:=ps.Create(context.Background(),application.CreateProjectInput{ID:"p",Name:"P",OwnerID:"owner"});e!=nil{t.Fatal(e)}; if _,e:=ps.Archive(context.Background(),"p","intruder");e==nil{t.Fatal("project accepted unauthorized archive")}; got,_:=ps.Get(context.Background(),"p");if !got.CanEdit(){t.Fatal("unauthorized archive changed state")}}
