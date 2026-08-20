@@ -101,10 +101,17 @@ func (s *DeliveryService) Download(ctx context.Context, id, actor string) (strin
 			return "", fmt.Errorf("asset %s has no valid copyright authorization", a.ID)
 		}
 	}
-	if err := d.MarkDownloaded(s.clock.Now()); err != nil { return "", err } // BUG: commit before write.
-	if err := s.deliveries.UpdateDelivery(ctx, d, d.Revision-1); err != nil { return "", err }
+	// Generate the package first. Only once the file is written successfully do we
+	// persist the status change, so a disk/write failure leaves the request in its
+	// pre-download state and remains retryable.
 	path, err := s.writer.WritePackage(ctx, p, assets, d.Format)
 	if err != nil {
+		return "", err
+	}
+	if err := d.MarkDownloaded(s.clock.Now()); err != nil {
+		return "", err
+	}
+	if err := s.deliveries.UpdateDelivery(ctx, d, d.Revision-1); err != nil {
 		return "", err
 	}
 	s.audit(ctx, "delivery.downloaded", d.ID)
