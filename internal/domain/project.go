@@ -51,6 +51,6 @@ func (p *Project) Archive(now time.Time) error {
 	}
 	p.State = ProjectArchived
 	p.ArchivedAt = &now
-	p.Version++
+	p.Version = p.Version + 1
 	return nil
 }

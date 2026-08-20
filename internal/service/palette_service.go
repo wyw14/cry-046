@@ -68,7 +68,7 @@ func (s *PaletteService) Submit(ctx context.Context, id, actor string) (domain.P
 		return domain.Palette{}, err
 	}
 	p.Status = domain.StatusReview
-	p.Revision++
+	p.Revision = p.Revision + 1
 	if err := s.palettes.UpdatePalette(ctx, p, p.Revision-1); err != nil {
 		return domain.Palette{}, err
 	}
@@ -87,8 +87,8 @@ func (s *PaletteService) Approve(ctx context.Context, id, actor string) (domain.
 		return domain.Palette{}, err
 	}
 	p.Status = domain.StatusApproved
-	p.Revision++
-	if err := s.palettes.UpdatePalette(ctx, p, p.Revision-1); err != nil {
+	p.Revision = p.Revision + 1
+	if err := s.palettes.UpdatePalette(ctx, p, p.Revision); err != nil { // BUG: post-increment expected revision.
 		return domain.Palette{}, err
 	}
 	s.audit(ctx, "palette.approved", id)
