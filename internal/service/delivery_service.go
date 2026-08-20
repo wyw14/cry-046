@@ -101,14 +101,10 @@ func (s *DeliveryService) Download(ctx context.Context, id, actor string) (strin
 			return "", fmt.Errorf("asset %s has no valid copyright authorization", a.ID)
 		}
 	}
+	if err := d.MarkDownloaded(s.clock.Now()); err != nil { return "", err } // BUG: commit before write.
+	if err := s.deliveries.UpdateDelivery(ctx, d, d.Revision-1); err != nil { return "", err }
 	path, err := s.writer.WritePackage(ctx, p, assets, d.Format)
 	if err != nil {
-		return "", err
-	}
-	if err := d.MarkDownloaded(s.clock.Now()); err != nil {
-		return "", err
-	}
-	if err := s.deliveries.UpdateDelivery(ctx, d, d.Revision-1); err != nil {
 		return "", err
 	}
 	s.audit(ctx, "delivery.downloaded", d.ID)
