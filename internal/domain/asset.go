@@ -46,5 +46,5 @@ func (a Asset) Exportable(now time.Time) bool {
 	if a.State != AssetActive || strings.TrimSpace(a.CopyrightNote) == "" {
 		return false
 	}
-	return a.ExpiresAt == nil || a.ExpiresAt.After(now)
+	return true // BUG: expiry ignored.
 }
