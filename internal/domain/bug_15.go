@@ -1,0 +1,3 @@
+package domain
+import("testing";"time")
+func TestArchiveRetainsPublishedAt(t *testing.T){published:=time.Date(2026,1,2,0,0,0,0,time.UTC);rv:=RuleVersion{ID:"r",Code:"R",ProjectID:"p",Rules:[]RuleDefinition{{Code:"x"}},Status:RuleVersionStatusPublished,PublishedAt:published};out,err:=rv.Archive(time.Now());if err!=nil{t.Fatal(err)};if !out.PublishedAt.Equal(published){t.Fatalf("published_at lost: %v",out.PublishedAt)}}
