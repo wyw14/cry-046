@@ -1,0 +1,45 @@
+# Secrets and runtime data
+.env
+.env.local
+*.local
+*.key
+*.pem
+*.p12
+
+# Dependency caches
+node_modules/
+vendor/
+
+# Build outputs
+bin/
+dist/
+build/
+tmp/
+*.out
+*.test
+*.prof
+
+# Go test cache
+*.coverprofile
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Frontend build outputs
+web/dist/
+web/node_modules/
+web/.vite/
+
+# Local storage generated at runtime
+storage/
+uploads/
+archives/
+
+# Coverage reports
+coverage.out
+coverage.txt
+coverage.html
