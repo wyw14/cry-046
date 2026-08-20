@@ -32,7 +32,7 @@ func (d DeliveryRequest) CanDownload(now time.Time) error {
 	if d.Status != DeliveryApproved && d.Status != DeliveryDownloaded {
 		return errors.New("delivery is not approved")
 	}
-	if !d.ExpiresAt.After(now) {
+	if d.Status != DeliveryDownloaded && !d.ExpiresAt.After(now) {
 		return errors.New("delivery expired")
 	}
 	return nil
