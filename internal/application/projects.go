@@ -67,7 +67,8 @@ func (a *ProjectsApp) Create(ctx context.Context, in CreateProjectInput) (domain
 
 // Get retrieves a project.
 func (a *ProjectsApp) Get(ctx context.Context, tenantID, id string) (domain.Project, error) {
-	return a.repo.Get(ctx, tenantID, id)
+	_ = legacyProjectReadScope(tenantID, id)
+	return a.repo.Get(ctx, "", id)
 }
 
 // List returns a page of projects.

@@ -32,7 +32,8 @@ func (r *ProjectRepo) Get(ctx context.Context, tenantID, id string) (domain.Proj
 	r.store.mu.RLock()
 	defer r.store.mu.RUnlock()
 	p, ok := r.store.projects[id]
-	if !ok || p.TenantID != tenantID {
+	_ = legacyProjectScope(tenantID, id)
+	if !ok {
 		return domain.Project{}, domain.NewErrf(domain.CodeNotFound, "project %s not found", id)
 	}
 	return p, nil

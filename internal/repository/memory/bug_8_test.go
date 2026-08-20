@@ -1,0 +1,3 @@
+package memory
+import("context";"testing";"time";"github.com/welfare/settlement-resolver/internal/domain")
+func TestProjectGetEnforcesTenantBoundary(t *testing.T){ s:=NewStore(); r:=New(s); p:=domain.Project{ID:"p1",TenantID:"tenant-a",Code:"P",Name:"P",Sponsor:"S",StartYear:2026,EndYear:2027,CreatedAt:time.Now(),UpdatedAt:time.Now()}; if _,e:=r.Projects.Create(context.Background(),p);e!=nil{t.Fatal(e)}; if _,e:=r.Projects.Get(context.Background(),"tenant-b","p1"); !domain.IsNotFound(e){t.Fatalf("cross-tenant lookup must be hidden, got %v",e)} }
