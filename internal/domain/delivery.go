@@ -32,7 +32,9 @@ func (d DeliveryRequest) CanDownload(now time.Time) error {
 	if d.Status != DeliveryApproved && d.Status != DeliveryDownloaded {
 		return errors.New("delivery is not approved")
 	}
-	if d.Status != DeliveryDownloaded && !d.ExpiresAt.After(now) {
+	// Expiry applies to every downloadable state, including an already-downloaded
+	// request, so an expired delivery can no longer be (re)downloaded.
+	if !d.ExpiresAt.After(now) {
 		return errors.New("delivery expired")
 	}
 	return nil
