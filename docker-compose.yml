@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: welfare_resolver
+      POSTGRES_USER: resolver
+      POSTGRES_PASSWORD: resolver
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resolver -d welfare_resolver"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - welfare_pg:/var/lib/postgresql/data
+  api:
+    build: .
+    environment:
+      DB_DSN: postgres://resolver:resolver@postgres:5432/welfare_resolver?sslmode=disable
+      APP_HTTP_ADDR: :8080
+      LOCAL_STORAGE_DIR: /app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - welfare_files:/app/storage
+
+volumes:
+  welfare_pg:
+  welfare_files:

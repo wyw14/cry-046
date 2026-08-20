@@ -1,0 +1,1365 @@
+openapi: 3.0.3
+info:
+  title: Welfare Settlement Exception Resolution Platform API
+  description: |
+    公益资金结算异常处置平台后端 API. 提供 项目/批次/周期/规则/明细/异常/汇总/工作台/审计 的 CRUD 与状态机操作.
+    所有需要鉴权的接口期望 Bearer Token, 通过 X-Tenant-ID 指定租户 (默认 "default").
+  version: 1.0.0
+  contact:
+    name: Welfare Settlement Resolver
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: http://127.0.0.1:8080/api/v1
+    description: Local loopback
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+  parameters:
+    TenantID:
+      name: X-Tenant-ID
+      in: header
+      description: 租户 ID (默认 "default")
+      schema:
+        type: string
+        default: default
+      required: false
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
+    OrderBy:
+      name: order_by
+      in: query
+      schema:
+        type: string
+        default: id
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          example: INVALID_ARGUMENT
+        message:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+        request_id:
+          type: string
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    PageResult:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        has_next:
+          type: boolean
+    Project:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        sponsor: { type: string }
+        annual_budget_cents: { type: integer, format: int64 }
+        start_year: { type: integer }
+        end_year: { type: integer }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Party:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [donor, implementer, beneficiary, intermediary] }
+        contact: { type: string }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FundingBatch:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        project_id: { type: string }
+        code: { type: string }
+        donor_party_id: { type: string }
+        implementer_party_id: { type: string }
+        intermediary_party_id: { type: string }
+        total_amount_cents: { type: integer, format: int64 }
+        currency: { type: string }
+        disbursed_at: { type: string, format: date-time }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SettlementCycle:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        project_id: { type: string }
+        funding_batch_id: { type: string }
+        year: { type: integer }
+        quarter: { type: integer, enum: [1, 2, 3, 4] }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        closed_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    RuleDefinition:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        description: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        category: { type: string }
+        expression: { type: string }
+        deadline_hours: { type: integer }
+    RuleVersion:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        code: { type: string }
+        project_id: { type: string }
+        description: { type: string }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/RuleDefinition' }
+        status: { type: string, enum: [draft, published, archived] }
+        published_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        version: { type: integer }
+    SettlementEntry:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        cycle_id: { type: string }
+        batch_id: { type: string }
+        project_id: { type: string }
+        source_id: { type: string }
+        source: { type: string, enum: [import, manual, resubmit] }
+        payee_party_id: { type: string }
+        payer_party_id: { type: string }
+        amount_cents: { type: integer, format: int64 }
+        currency: { type: string }
+        occurred_at: { type: string, format: date-time }
+        source_fingerprint: { type: string }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Exception:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        cycle_id: { type: string }
+        entry_id: { type: string }
+        rule_version_id: { type: string }
+        rule_code: { type: string }
+        severity: { type: string }
+        title: { type: string }
+        description: { type: string }
+        hit_reason: { type: string }
+        status: { type: string, enum: [pending, processing, review, resolved, closed, escalated] }
+        assignee_id: { type: string, nullable: true }
+        reporter_id: { type: string, nullable: true }
+        deadline_at: { type: string, format: date-time, nullable: true }
+        resolved_at: { type: string, format: date-time, nullable: true }
+        closed_at: { type: string, format: date-time, nullable: true }
+        version: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Summary:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        cycle_id: { type: string }
+        rule_version_id: { type: string }
+        computed_at: { type: string, format: date-time }
+        total_entries: { type: integer }
+        total_amount_cents: { type: integer, format: int64 }
+        approved_amount_cents: { type: integer, format: int64 }
+        pending_amount_cents: { type: integer, format: int64 }
+        exception_count_by_status: { type: object, additionalProperties: { type: integer } }
+        exception_count_by_severity: { type: object, additionalProperties: { type: integer } }
+        version: { type: integer }
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: string }
+        tenant_id: { type: string }
+        actor_id: { type: string }
+        action: { type: string }
+        entity_type: { type: string }
+        entity_id: { type: string }
+        detail: { type: object, additionalProperties: { type: string } }
+        created_at: { type: string, format: date-time }
+  responses:
+    BadRequest:
+      description: 无效请求
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Unauthenticated:
+      description: 未认证
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    PermissionDenied:
+      description: 权限不足
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+security:
+  - bearerAuth: []
+tags:
+  - name: Projects
+  - name: Parties
+  - name: Batches
+  - name: Cycles
+  - name: Rules
+  - name: Entries
+  - name: Exceptions
+  - name: Summaries
+  - name: Workspace
+  - name: Audit
+  - name: Users
+paths:
+  /projects:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+    post:
+      tags: [Projects]
+      summary: 创建项目
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, sponsor, start_year, end_year]
+              properties:
+                code: { type: string }
+                name: { type: string }
+                sponsor: { type: string }
+                annual_budget_cents: { type: integer, format: int64, minimum: 0 }
+                start_year: { type: integer, minimum: 1900 }
+                end_year: { type: integer, minimum: 1900 }
+                metadata: { type: object, additionalProperties: { type: string } }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    get:
+      tags: [Projects]
+      summary: 项目列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/OrderBy'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Project' }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /projects/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Projects]
+      summary: 查询项目
+      responses:
+        '200':
+          description: 项目
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Projects]
+      summary: 更新项目
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, sponsor, start_year, end_year]
+              properties:
+                code: { type: string }
+                name: { type: string }
+                sponsor: { type: string }
+                annual_budget_cents: { type: integer, format: int64, minimum: 0 }
+                start_year: { type: integer, minimum: 1900 }
+                end_year: { type: integer, minimum: 1900 }
+                metadata: { type: object, additionalProperties: { type: string } }
+      responses:
+        '200':
+          description: 更新后项目
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+  /parties:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Parties]
+      summary: 创建参与方
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type, contact]
+              properties:
+                name: { type: string }
+                type: { type: string, enum: [donor, implementer, beneficiary, intermediary] }
+                contact: { type: string }
+                metadata: { type: object, additionalProperties: { type: string } }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Party' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    get:
+      tags: [Parties]
+      summary: 参与方列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Party' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /parties/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Parties]
+      summary: 查询参与方
+      responses:
+        '200':
+          description: 参与方
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Party' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /batches:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Batches]
+      summary: 创建资助批次
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, code, donor_party_id, implementer_party_id, total_amount_cents, currency, disbursed_at]
+              properties:
+                project_id: { type: string }
+                code: { type: string }
+                donor_party_id: { type: string }
+                implementer_party_id: { type: string }
+                intermediary_party_id: { type: string, nullable: true }
+                total_amount_cents: { type: integer, format: int64, minimum: 1 }
+                currency: { type: string }
+                disbursed_at: { type: string, format: date-time }
+                metadata: { type: object, additionalProperties: { type: string } }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FundingBatch' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    get:
+      tags: [Batches]
+      summary: 批次列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/FundingBatch' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /batches/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Batches]
+      summary: 查询批次
+      responses:
+        '200':
+          description: 批次
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FundingBatch' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /cycles:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Cycles]
+      summary: 创建结算周期
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, funding_batch_id, year, quarter, start_date, end_date]
+              properties:
+                project_id: { type: string }
+                funding_batch_id: { type: string }
+                year: { type: integer, minimum: 1900 }
+                quarter: { type: integer, enum: [1, 2, 3, 4] }
+                start_date: { type: string, format: date-time }
+                end_date: { type: string, format: date-time }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementCycle' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    get:
+      tags: [Cycles]
+      summary: 周期列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/SettlementCycle' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /cycles/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Cycles]
+      summary: 查询周期
+      responses:
+        '200':
+          description: 周期
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementCycle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /cycles/{id}/close:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Cycles]
+      summary: 关闭周期
+      responses:
+        '200':
+          description: 关闭后周期
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementCycle' }
+  /rule-versions:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Rules]
+      summary: 创建规则版本
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, project_id, rules]
+              properties:
+                code: { type: string }
+                project_id: { type: string }
+                description: { type: string }
+                rules:
+                  type: array
+                  items:
+                    type: object
+                    required: [code, severity, expression]
+                    properties:
+                      code: { type: string }
+                      description: { type: string }
+                      severity: { type: string, enum: [low, medium, high, critical] }
+                      category: { type: string }
+                      expression: { type: string }
+                      deadline_hours: { type: integer, minimum: 0 }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuleVersion' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    get:
+      tags: [Rules]
+      summary: 规则版本列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/RuleVersion' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /rule-versions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Rules]
+      summary: 查询规则版本
+      responses:
+        '200':
+          description: 规则版本
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuleVersion' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /rule-versions/{id}/publish:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Rules]
+      summary: 发布规则版本
+      responses:
+        '200':
+          description: 发布后规则版本
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuleVersion' }
+  /rule-versions/{id}/archive:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Rules]
+      summary: 归档规则版本
+      responses:
+        '200':
+          description: 归档后规则版本
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuleVersion' }
+  /entries/import:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Entries]
+      summary: 导入结算明细 (支持去重与幂等)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batch_id, cycle_id, project_id, entries]
+              properties:
+                batch_id: { type: string }
+                cycle_id: { type: string }
+                project_id: { type: string }
+                entries:
+                  type: array
+                  items:
+                    type: object
+                    required: [source_id, source, payee_party_id, payer_party_id, amount_cents, currency, occurred_at]
+                    properties:
+                      source_id: { type: string }
+                      source: { type: string, enum: [import, manual, resubmit] }
+                      payee_party_id: { type: string }
+                      payer_party_id: { type: string }
+                      amount_cents: { type: integer, format: int64, minimum: 0 }
+                      currency: { type: string }
+                      occurred_at: { type: string, format: date-time }
+                      metadata: { type: object, additionalProperties: { type: string } }
+      responses:
+        '201':
+          description: 导入结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      created: { type: integer }
+                      updated: { type: integer }
+                      skipped: { type: integer }
+                  entries:
+                    type: array
+                    items: { $ref: '#/components/schemas/SettlementEntry' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /entries:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    get:
+      tags: [Entries]
+      summary: 明细列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: cycle_id
+          in: query
+          schema: { type: string }
+        - name: batch_id
+          in: query
+          schema: { type: string }
+        - name: project_id
+          in: query
+          schema: { type: string }
+        - name: source
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/SettlementEntry' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /entries/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Entries]
+      summary: 查询明细
+      responses:
+        '200':
+          description: 明细
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementEntry' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /exceptions:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    get:
+      tags: [Exceptions]
+      summary: 异常列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: cycle_id
+          in: query
+          schema: { type: string }
+        - name: entry_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: severity
+          in: query
+          schema: { type: string }
+        - name: assignee_id
+          in: query
+          schema: { type: string }
+        - name: overdue_only
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Exception' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /exceptions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Exceptions]
+      summary: 查询异常
+      responses:
+        '200':
+          description: 异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /exceptions/{id}/assign:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 分派异常
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignee_id]
+              properties:
+                assignee_id: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: 分派后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/claim:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 认领异常
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 认领后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/resubmit:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 请求重新提交
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/review:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 提交复核
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/resolve:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 解决异常 (复核人 != 分派人)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/close:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 关闭异常
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/escalate:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 升级异常
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/rework:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 返工异常
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /exceptions/{id}/notes:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Exceptions]
+      summary: 追加备注
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body, kind]
+              properties:
+                body: { type: string }
+                kind: { type: string, enum: [comment, assignment, claim, resubmit, review, escalation, rework] }
+      responses:
+        '200':
+          description: 操作后异常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exception' }
+  /summaries/recalculate:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Summaries]
+      summary: 重新计算汇总 (保留快照)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cycle_id, rule_version_id, trigger_reason]
+              properties:
+                cycle_id: { type: string }
+                rule_version_id: { type: string }
+                trigger_reason: { type: string }
+      responses:
+        '201':
+          description: 重新计算结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recalc_id: { type: string }
+                  summary: { $ref: '#/components/schemas/Summary' }
+                  previous: { $ref: '#/components/schemas/Summary' }
+  /summaries/cycles/{cycleId}/latest:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: cycleId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Summaries]
+      summary: 查询周期最新汇总
+      responses:
+        '200':
+          description: 汇总
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Summary' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /summaries/cycles/{cycleId}/history:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: cycleId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Summaries]
+      summary: 查询周期汇总历史
+      responses:
+        '200':
+          description: 历史
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Summary' } }
+  /summaries/recalcs:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    get:
+      tags: [Summaries]
+      summary: 重算批次列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        cycle_id: { type: string }
+                        rule_version_id: { type: string }
+                        input_digest: { type: string }
+                        trigger_reason: { type: string }
+                        status: { type: string }
+                        started_at: { type: string, format: date-time }
+                        finished_at: { type: string, format: date-time, nullable: true }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /annual/{projectId}/{year}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: projectId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: year
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Summaries]
+      summary: 查询年度预算累计
+      responses:
+        '200':
+          description: 年度累计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project_id: { type: string }
+                  year: { type: integer }
+                  budget_cents: { type: integer, format: int64 }
+                  disbursed_cents: { type: integer, format: int64 }
+                  available_cents: { type: integer, format: int64 }
+                  overrun_cents: { type: integer, format: int64 }
+                  adjustments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        delta_cents: { type: integer, format: int64 }
+                        reason: { type: string }
+                        triggered_by: { type: string }
+                        created_at: { type: string, format: date-time }
+  /annual/{projectId}/{year}/adjustments:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: projectId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: year
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Summaries]
+      summary: 调整年度预算
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                delta_cents: { type: integer, format: int64 }
+                reason: { type: string }
+      responses:
+        '200':
+          description: 调整后年度累计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project_id: { type: string }
+                  year: { type: integer }
+                  budget_cents: { type: integer, format: int64 }
+                  disbursed_cents: { type: integer, format: int64 }
+                  available_cents: { type: integer, format: int64 }
+                  overrun_cents: { type: integer, format: int64 }
+  /workspace/{assigneeId}:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: assigneeId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Workspace]
+      summary: 查询处理人工作台
+      responses:
+        '200':
+          description: 工作台
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assignee_id: { type: string }
+                  open: { type: array, items: { $ref: '#/components/schemas/Exception' } }
+                  overdue: { type: array, items: { $ref: '#/components/schemas/Exception' } }
+                  escalated: { type: array, items: { $ref: '#/components/schemas/Exception' } }
+                  recently_closed: { type: array, items: { $ref: '#/components/schemas/Exception' } }
+  /audit:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    get:
+      tags: [Audit]
+      summary: 审计日志列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: actor_id
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: entity_id
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }
+  /audit/export:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    get:
+      tags: [Audit]
+      summary: 导出审计日志 CSV
+      responses:
+        '200':
+          description: CSV
+          content:
+            text/csv:
+              schema: { type: string }
+  /audit/exceptions/{cycleId}/export:
+    parameters:
+      - $ref: '#/components/parameters/TenantID'
+      - name: cycleId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Audit]
+      summary: 导出周期异常 CSV
+      responses:
+        '200':
+          description: CSV
+          content:
+            text/csv:
+              schema: { type: string }
+  /users:
+    parameters: [ { $ref: '#/components/parameters/TenantID' } ]
+    post:
+      tags: [Users]
+      summary: 创建用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, role]
+              properties:
+                username: { type: string }
+                display_name: { type: string }
+                email: { type: string }
+                role: { type: string, enum: [operator, assignee, reviewer, admin] }
+                password_hash: { type: string }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  username: { type: string }
+                  display_name: { type: string }
+                  email: { type: string }
+                  role: { type: string }
+    get:
+      tags: [Users]
+      summary: 用户列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        username: { type: string }
+                        display_name: { type: string }
+                        email: { type: string }
+                        role: { type: string }
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  total: { type: integer }
+                  has_next: { type: boolean }

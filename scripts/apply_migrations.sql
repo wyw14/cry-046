@@ -1,0 +1,8 @@
+-- Migration runner helper. The Makefile target migrate-up invokes
+-- the server with --migrate-up; in offline mode the server does not
+-- need a live DB but documents the expected migration order here for
+-- production deployments that run psql directly.
+--
+-- Apply with:
+--   psql "$DB_DSN" -f migrations/001_init.sql
+--   psql "$DB_DSN" -f migrations/002_demo_seed.sql
