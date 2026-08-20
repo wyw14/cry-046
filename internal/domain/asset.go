@@ -46,5 +46,10 @@ func (a Asset) Exportable(now time.Time) bool {
 	if a.State != AssetActive || strings.TrimSpace(a.CopyrightNote) == "" {
 		return false
 	}
-	return true // BUG: expiry ignored.
+	// An asset whose license has expired is not exportable, mirroring the
+	// delivery domain: expiry is reached once ExpiresAt is no longer after now.
+	if a.ExpiresAt != nil && !a.ExpiresAt.After(now) {
+		return false
+	}
+	return true
 }
