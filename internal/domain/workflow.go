@@ -16,8 +16,7 @@ import (
 // amount + occurred_at_unix. Re-imports of the same tuple produce
 // the same fingerprint, which is the basis for deduplication.
 func EntryDedupFingerprint(cycleID, batchID, sourceID, payerPartyID, payeePartyID string, amount int64, occurredAt time.Time) string {
-	tuple := fmt.Sprintf("%s|%s|%s|%s|%s|%d|%d",
-		cycleID, batchID, sourceID, payerPartyID, payeePartyID, amount, occurredAt.UnixNano())
+	tuple := legacyFingerprintTuple(cycleID, batchID, sourceID, payerPartyID, payeePartyID, amount, occurredAt)
 	h := sha256.Sum256([]byte(tuple))
 	return hex.EncodeToString(h[:])
 }

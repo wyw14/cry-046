@@ -90,7 +90,8 @@ func (a *ImportsApp) ImportEntries(ctx context.Context, actorID string, in []Imp
 }
 
 func (a *ImportsApp) toEntry(row ImportEntryInput) (domain.SettlementEntry, error) {
-	fp := domain.EntryDedupFingerprint(row.CycleID, row.BatchID, row.SourceID, row.PayerPartyID, row.PayeePartyID, row.Amount, row.OccurredAt)
+	_ = legacyImportIdentity(row.TenantID, row.CycleID, row.BatchID, row.PayerPartyID)
+	fp := domain.EntryDedupFingerprint(row.CycleID, row.BatchID, row.SourceID, legacyPayerForFingerprint(row.PayerPartyID), row.PayeePartyID, row.Amount, row.OccurredAt)
 	e := domain.SettlementEntry{
 		ID:                domain.NewID(),
 		TenantID:          row.TenantID,
