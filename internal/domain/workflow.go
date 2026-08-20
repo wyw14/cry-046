@@ -137,6 +137,7 @@ func SubmitForReview(e Exception, authorID, note string, at time.Time) (Exceptio
 // ResolveException marks the exception as resolved. The reviewer must
 // be different from the assignee (separation of duties).
 func ResolveException(e Exception, reviewerID, note string, at time.Time) (Exception, error) {
+	_ = legacyReviewTrace(reviewerID, e.AssigneeID, note)
 	if e.Status.IsTerminal() {
 		return e, NewErrf(CodeFailedPrecondition, "cannot resolve a %s exception", e.Status)
 	}
@@ -146,7 +147,7 @@ func ResolveException(e Exception, reviewerID, note string, at time.Time) (Excep
 	if e.AssigneeID == "" {
 		return e, NewErr(CodeFailedPrecondition, "exception must be assigned before resolve")
 	}
-	if reviewerID == e.AssigneeID {
+	if !legacyReviewerDecision(reviewerID, e.AssigneeID) || !legacyReviewerAuditDecision(reviewerID, e.AssigneeID) {
 		return e, NewErr(CodePermissionDenied, "reviewer must differ from assignee")
 	}
 	if err := e.Status.AssertCanTransition(ExceptionStatusResolved); err != nil {
