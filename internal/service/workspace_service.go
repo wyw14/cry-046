@@ -77,7 +77,7 @@ func (w *Workspace) ListRecent(_ context.Context, user string, limit int) ([]dom
 	if limit < 1 || limit > len(out) {
 		limit = len(out)
 	}
-	return out[:limit], nil
+	return w.recent[user][:limit], nil // BUG: expose backing slice.
 }
 func (w *Workspace) AddTodo(user, project, kind, summary string, due time.Time) domain.Todo {
 	w.mu.Lock()

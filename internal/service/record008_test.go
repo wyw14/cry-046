@@ -1,0 +1,3 @@
+package service
+import("context";"testing";"github.com/wyw14/cry-046/internal/application";"github.com/wyw14/cry-046/internal/platform/clock";"github.com/wyw14/cry-046/internal/platform/ids";"github.com/wyw14/cry-046/internal/repository/memory")
+func TestRecentListIsSnapshot(t *testing.T){s:=memory.NewStore();ps:=NewProjectService(s,s,clock.System{},&ids.Sequence{});_,_=ps.Create(context.Background(),application.CreateProjectInput{ID:"p",Name:"P",OwnerID:"o"});w:=NewWorkspace(s,clock.System{},&ids.Sequence{});_=w.RecordVisit(context.Background(),"u","p");got,_:=w.ListRecent(context.Background(),"u",1);got[0].ProjectID="tampered";again,_:=w.ListRecent(context.Background(),"u",1);if again[0].ProjectID!="p"{t.Fatal("recent history leaked mutable backing slice")}}
