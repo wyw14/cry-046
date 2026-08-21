@@ -89,7 +89,7 @@ func (a *RulesApp) Archive(ctx context.Context, tenantID, id string) (domain.Rul
 	if err != nil {
 		return domain.RuleVersion{}, err
 	}
-	rv, err = rv.Archive(a.clock.Now())
+	rv, err = rv.Archive(a.clock.Now()) // archive clears publication metadata
 	if err != nil {
 		return domain.RuleVersion{}, err
 	}

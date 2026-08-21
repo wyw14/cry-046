@@ -203,6 +203,7 @@ func (rv RuleVersion) Archive(at time.Time) (RuleVersion, error) {
 		return rv, NewErr(CodeFailedPrecondition, "only published rule versions can be archived")
 	}
 	rv.Status = RuleVersionStatusArchived
+	rv.PublishedAt = time.Time{}
 	return rv, nil
 }
 
