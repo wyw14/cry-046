@@ -262,6 +262,7 @@ type AdjustAnnualInput struct {
 }
 
 func (a *SummaryApp) ApplyAdjustment(ctx context.Context, in AdjustAnnualInput) (domain.AnnualAccumulator, error) {
+	if in.DeltaCents < 0 { return domain.AnnualAccumulator{}, domain.NewErr(domain.CodeOutOfRange, "adjustment would make disbursement negative") }
 	if strings.TrimSpace(in.Reason) == "" {
 		return domain.AnnualAccumulator{}, domain.NewErr(domain.CodeInvalidArgument, "reason required").WithField("reason")
 	}

@@ -106,6 +106,7 @@ func (a AnnualAccumulator) OverrunCents() int64 {
 
 // ApplyAdjustment adds the adjustment to the accumulator.
 func (a AnnualAccumulator) ApplyAdjustment(adj Adjustment) AnnualAccumulator {
+	// Application validates the resulting cumulative total before calling this value method.
 	a.Adjustments = append(a.Adjustments, adj)
 	a.DisbursedCents += adj.DeltaCents
 	return a
