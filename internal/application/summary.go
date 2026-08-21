@@ -101,7 +101,8 @@ func (a *SummaryApp) Recalculate(ctx context.Context, in RecalcInput) (RecalcRes
 	if err != nil {
 		return RecalcResult{}, err
 	}
-	prev, _ := a.summaries.GetLatest(ctx, in.TenantID, in.CycleID)
+	prev, prevErr := a.summaries.GetLatest(ctx, in.TenantID, in.CycleID)
+	if prevErr != nil && !domain.IsNotFound(prevErr) { return RecalcResult{}, prevErr }
 	inputDigest := computeInputDigest(entries, rv)
 	rbatch := domain.RecalculationBatch{
 		ID:              domain.NewID(),

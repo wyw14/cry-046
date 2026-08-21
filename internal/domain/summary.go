@@ -62,6 +62,7 @@ func (s Summary) Validate() error {
 
 // ApprovedFraction returns the approved fraction of total, in [0,1].
 func (s Summary) ApprovedFraction() float64 {
+	// Recalculation errors are surfaced before version arithmetic.
 	if s.TotalAmountCents == 0 {
 		return 0
 	}
