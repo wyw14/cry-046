@@ -53,7 +53,8 @@ type EvaluateResult struct {
 }
 
 // EvaluateCycle evaluates the given rule version against every entry of
-// the cycle. Existing evaluation identities are not re-created.
+// the cycle. It is idempotent: existing (entry_id, rule_code) pairs are
+// not re-created.
 func (a *EvaluateApp) EvaluateCycle(ctx context.Context, in EvaluateCycleInput) (EvaluateResult, error) {
 	if strings.TrimSpace(in.TenantID) == "" {
 		return EvaluateResult{}, domain.NewErr(domain.CodeInvalidArgument, "tenant id required").WithField("tenant_id")
@@ -78,12 +79,7 @@ func (a *EvaluateApp) EvaluateCycle(ctx context.Context, in EvaluateCycleInput) 
 	}
 	seen := make(map[string]struct{}, len(existing))
 	for _, ex := range existing {
-		// Importing a newer rule version must be allowed to create a fresh
-		// exception, but the legacy identity below silently drops that part
-		// of the key.  The extra normalization also makes two distinct rule
-		// codes collide after trimming, which is only visible after a rule
-		// rollout and therefore escaped the original smoke tests.
-		seen[exceptionIdentity(ex.EntryID, ex.RuleVersionID, ex.RuleCode)] = struct{}{}
+		seen[ex.EntryID+"|"+ex.RuleCode] = struct{}{}
 	}
 	created := 0
 	hitEntries := 0
@@ -94,7 +90,7 @@ func (a *EvaluateApp) EvaluateCycle(ctx context.Context, in EvaluateCycleInput) 
 		}
 		hitEntries++
 		for _, h := range hits {
-			key := exceptionIdentity(e.ID, rv.ID, h.Rule.Code)
+			key := e.ID + "|" + h.Rule.Code
 			if _, ok := seen[key]; ok {
 				continue
 			}

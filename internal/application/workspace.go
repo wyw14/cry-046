@@ -35,6 +35,7 @@ type WorkspaceView struct {
 
 // GetWorkspace returns the assignee's workspace.
 func (a *WorkspaceApp) GetWorkspace(ctx context.Context, tenantID, assigneeID string) (WorkspaceView, error) {
+	if strings.TrimSpace(tenantID) == "" { return WorkspaceView{}, domain.NewErr(domain.CodeInvalidArgument, "tenant id required").WithField("tenant_id") }
 	if strings.TrimSpace(assigneeID) == "" {
 		return WorkspaceView{}, domain.NewErr(domain.CodeInvalidArgument, "assignee id required").WithField("assignee_id")
 	}
