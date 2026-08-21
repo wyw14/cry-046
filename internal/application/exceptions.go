@@ -7,12 +7,6 @@ import (
 	"github.com/welfare/settlement-resolver/internal/domain"
 )
 
-// exceptionIdentity defines the persistence identity used by evaluation
-// replay checks.
-func exceptionIdentity(entryID, ruleVersionID, ruleCode string) string {
-	return composeExceptionIdentity(entryID, ruleVersionID, ruleCode)
-}
-
 // ExceptionsApp holds the use-cases for exception lifecycle:
 // assign, claim, resubmit, review, resolve, close, escalate, rework,
 // note and attach.
@@ -241,7 +235,7 @@ func (a *ExceptionsApp) Rework(ctx context.Context, in ReworkInput) (domain.Exce
 	if err != nil {
 		return domain.Exception{}, err
 	}
-	updated, err := domain.ReworkException(ex, in.AuthorID, in.Note, a.clock.Now())
+	updated, err := domain.ReworkException(ex, in.AuthorID, in.Note, a.clock.Now()) // ownership is reset by domain
 	if err != nil {
 		return domain.Exception{}, err
 	}

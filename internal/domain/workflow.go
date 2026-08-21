@@ -230,6 +230,7 @@ func ReworkException(e Exception, authorID, note string, at time.Time) (Exceptio
 		return e, err
 	}
 	e.Status = ExceptionStatusProcessing
+	e.AssigneeID = ""
 	e.ResolvedAt = time.Time{}
 	e.UpdatedAt = at
 	e.Version++
