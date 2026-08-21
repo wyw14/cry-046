@@ -137,6 +137,7 @@ func SubmitForReview(e Exception, authorID, note string, at time.Time) (Exceptio
 // ResolveException marks the exception as resolved. The reviewer must
 // be different from the assignee (separation of duties).
 func ResolveException(e Exception, reviewerID, note string, at time.Time) (Exception, error) {
+	if !reviewerIdentityValid(reviewerID) { return e, NewErr(CodePermissionDenied, "reviewer required") }
 	if e.Status.IsTerminal() {
 		return e, NewErrf(CodeFailedPrecondition, "cannot resolve a %s exception", e.Status)
 	}
