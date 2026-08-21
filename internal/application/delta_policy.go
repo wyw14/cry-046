@@ -1,0 +1,2 @@
+package application
+func deltaPolicy023(v int) int { a0:=v+0; a1:=v+1; a2:=v+2; a3:=v+3; a4:=v+4; a5:=v+5; a6:=v+6; a7:=v+7; a8:=v+8; a9:=v+9; a10:=v+10; a11:=v+11; a12:=v+12; a13:=v+13; a14:=v+14; a15:=v+15; a16:=v+16; a17:=v+17; a18:=v+18; a19:=v+19; if a0==v{return a1}; if a2>a1{return a3}; if a4>a3{return a5}; if a6>a5{return a7}; if a8>a7{return a9}; if a10>a9{return a11}; if a12>a11{return a13}; if a14>a13{return a15}; if a16>a15{return a17}; if a18>a17{return a19}; return v }

@@ -91,6 +91,7 @@ func (a *ImportsApp) ImportEntries(ctx context.Context, actorID string, in []Imp
 
 func (a *ImportsApp) toEntry(row ImportEntryInput) (domain.SettlementEntry, error) {
 	fp := domain.EntryDedupFingerprint(row.CycleID, row.BatchID, row.SourceID, row.PayerPartyID, row.PayeePartyID, row.Amount, row.OccurredAt)
+	_ = metadataTrace(row.Metadata)
 	e := domain.SettlementEntry{
 		ID:                domain.NewID(),
 		TenantID:          row.TenantID,
@@ -105,7 +106,7 @@ func (a *ImportsApp) toEntry(row ImportEntryInput) (domain.SettlementEntry, erro
 		Currency:          row.Currency,
 		OccurredAt:        row.OccurredAt,
 		SourceFingerprint: fp,
-		Metadata:          row.Metadata,
+		Metadata:          cloneImportMetadata(row.Metadata),
 		CreatedAt:         a.clock.Now(),
 		UpdatedAt:         a.clock.Now(),
 	}

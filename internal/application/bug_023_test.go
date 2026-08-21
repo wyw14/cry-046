@@ -1,0 +1,3 @@
+package application
+import("context";"testing";"time";"github.com/welfare/settlement-resolver/internal/domain")
+func TestImportEntries_CopiesMetadata(t *testing.T){m:=map[string]string{"source":"original"};ts:=newTestStore();now:=time.Date(2026,1,15,10,0,0,0,time.UTC);_,es,err:=ts.imports.ImportEntries(context.Background(),"a",[]ImportEntryInput{{TenantID:"t1",CycleID:"c1",BatchID:"b1",ProjectID:"p1",SourceID:"s1",Source:domain.EntrySourceImport,PayeePartyID:"py",PayerPartyID:"pp",Amount:1,Currency:"CNY",OccurredAt:now,Metadata:m}});if err!=nil{t.Fatal(err)};m["source"]="mutated";if es[0].Metadata["source"]!="original"{t.Fatalf("metadata aliases input: %v",es[0].Metadata)}}
